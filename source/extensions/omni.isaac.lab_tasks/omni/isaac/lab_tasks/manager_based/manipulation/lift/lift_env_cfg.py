@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
+# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -6,7 +6,7 @@
 from dataclasses import MISSING
 
 import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg, DeformableObjectCfg, RigidObjectCfg
+from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg, DeformableObject, DeformableObjectCfg, RigidObjectCfg
 from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
 from omni.isaac.lab.managers import CurriculumTermCfg as CurrTerm
 from omni.isaac.lab.managers import EventTermCfg as EventTerm
@@ -17,16 +17,31 @@ from omni.isaac.lab.managers import SceneEntityCfg
 from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
 from omni.isaac.lab.scene import InteractiveSceneCfg
 from omni.isaac.lab.sensors.frame_transformer.frame_transformer_cfg import FrameTransformerCfg
+from omni.isaac.lab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
 from omni.isaac.lab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 
+from omni.isaac.core.utils.prims import get_prim_at_path
 from . import mdp
+import torch
+
+from pxr import Gf
+
+
+
+
+origin = [0.5, 0, 0]
+
 
 ##
 # Scene definition
 ##
 
+box_length = 0.6096
+box_width = 0.9144
+box_height = 0.3048
+thickness = 0.0010
 
 @configclass
 class ObjectTableSceneCfg(InteractiveSceneCfg):
@@ -42,11 +57,73 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     # target object: will be populated by agent env cfg
     object: RigidObjectCfg | DeformableObjectCfg = MISSING
 
+    # clutter objects: will be populated by agent env cfg
+    clutter_object1: RigidObjectCfg | DeformableObjectCfg = MISSING
+    clutter_object2: RigidObjectCfg | DeformableObjectCfg = MISSING
+    clutter_object3: RigidObjectCfg | DeformableObjectCfg = MISSING
+    clutter_object4: RigidObjectCfg | DeformableObjectCfg = MISSING
+    clutter_object5: RigidObjectCfg | DeformableObjectCfg = MISSING
+    clutter_object6: RigidObjectCfg | DeformableObjectCfg = MISSING
+
     # Table
     table = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Table",
         init_state=AssetBaseCfg.InitialStateCfg(pos=[0.5, 0, 0], rot=[0.707, 0, 0, 0.707]),
         spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
+    )
+
+    # Box
+    wall1 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall1",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([-box_length / 2, 0, box_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],    # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(thickness, box_width, box_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+        )
+    )
+    wall2 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall2",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([0, -box_width / 2, box_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],    # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(box_length, thickness, box_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+        )
+    )
+    wall3 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall3",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([box_length / 2, 0, box_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],    # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(thickness, box_width, box_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+        )
+    )
+    wall4 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall4",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([0, box_width / 2, box_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],    # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(box_length, thickness, box_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+        )
     )
 
     # plane
@@ -106,6 +183,26 @@ class ObservationsCfg:
         target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
         actions = ObsTerm(func=mdp.last_action)
 
+        # clutter positions
+        clutter_position1 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+            "object_cfg": SceneEntityCfg("clutter_object1")
+        })
+        clutter_position2 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+            "object_cfg": SceneEntityCfg("clutter_object2")
+        })
+        clutter_position3 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+            "object_cfg": SceneEntityCfg("clutter_object3")
+        })
+        clutter_position4 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+            "object_cfg": SceneEntityCfg("clutter_object4")
+        })
+        clutter_position5 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+            "object_cfg": SceneEntityCfg("clutter_object5")
+        })
+        clutter_position6 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+            "object_cfg": SceneEntityCfg("clutter_object6")
+        })
+
         def __post_init__(self):
             self.enable_corruption = True
             self.concatenate_terms = True
@@ -127,6 +224,61 @@ class EventCfg:
             "pose_range": {"x": (-0.1, 0.1), "y": (-0.25, 0.25), "z": (0.0, 0.0)},
             "velocity_range": {},
             "asset_cfg": SceneEntityCfg("object", body_names="Object"),
+        },
+    )
+
+    reset_clutter1_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("clutter_object1", body_names="Clutter00"),
+        },
+    )
+    reset_clutter2_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("clutter_object2", body_names="Clutter01"),
+        },
+    )
+    reset_clutter3_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("clutter_object3", body_names="Clutter02"),
+        },
+    )
+    reset_clutter4_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("clutter_object4", body_names="Clutter03"),
+        },
+    )
+    reset_clutter5_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("clutter_object5", body_names="Clutter04"),
+        },
+    )
+    reset_clutter6_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("clutter_object6", body_names="Clutter05"),
         },
     )
 
