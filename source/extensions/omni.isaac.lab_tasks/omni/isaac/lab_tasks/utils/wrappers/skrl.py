@@ -74,9 +74,9 @@ def SkrlVecEnvWrapper(
 
     # import statements according to the ML framework
     if ml_framework.startswith("torch"):
-        from skrl.envs.wrappers.torch import wrap_env
+        from omni.isaac.lab_tasks.skrl_custom.envs.wrappers.torch import wrap_env
     elif ml_framework.startswith("jax"):
-        from skrl.envs.wrappers.jax import wrap_env
+        from omni.isaac.lab_tasks.skrl_custom.envs.wrappers.jax import wrap_env
     else:
         ValueError(
             f"Invalid ML framework for skrl: {ml_framework}. Available options are: 'torch', 'jax' or 'jax-numpy'"
