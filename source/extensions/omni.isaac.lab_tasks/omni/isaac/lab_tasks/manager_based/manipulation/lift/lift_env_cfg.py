@@ -27,6 +27,7 @@ from . import mdp
 import torch
 
 from pxr import Gf
+from typing import List, Union
 
 
 
@@ -56,14 +57,6 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     ee_frame: FrameTransformerCfg = MISSING
     # target object: will be populated by agent env cfg
     object: RigidObjectCfg | DeformableObjectCfg = MISSING
-
-    # clutter objects: will be populated by agent env cfg
-    clutter_object1: RigidObjectCfg | DeformableObjectCfg = MISSING
-    clutter_object2: RigidObjectCfg | DeformableObjectCfg = MISSING
-    clutter_object3: RigidObjectCfg | DeformableObjectCfg = MISSING
-    clutter_object4: RigidObjectCfg | DeformableObjectCfg = MISSING
-    clutter_object5: RigidObjectCfg | DeformableObjectCfg = MISSING
-    clutter_object6: RigidObjectCfg | DeformableObjectCfg = MISSING
 
     # Table
     table = AssetBaseCfg(
@@ -139,6 +132,11 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
 
+    def __post_init__(self):
+        """Initialize with a variable number of clutter objects."""
+        num_clutter_objects = 6
+        for i in range(num_clutter_objects):
+            setattr(self, f"clutter_object{i+1}", MISSING)
 
 ##
 # MDP settings
@@ -183,29 +181,17 @@ class ObservationsCfg:
         target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
         actions = ObsTerm(func=mdp.last_action)
 
-        # clutter positions
-        clutter_position1 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-            "object_cfg": SceneEntityCfg("clutter_object1")
-        })
-        clutter_position2 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-            "object_cfg": SceneEntityCfg("clutter_object2")
-        })
-        clutter_position3 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-            "object_cfg": SceneEntityCfg("clutter_object3")
-        })
-        clutter_position4 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-            "object_cfg": SceneEntityCfg("clutter_object4")
-        })
-        clutter_position5 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-            "object_cfg": SceneEntityCfg("clutter_object5")
-        })
-        clutter_position6 = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-            "object_cfg": SceneEntityCfg("clutter_object6")
-        })
-
         def __post_init__(self):
             self.enable_corruption = True
             self.concatenate_terms = True
+
+            """Initialize with a variable number of clutter objects."""
+            num_clutter_objects = 6
+            for i in range(num_clutter_objects):
+                clutter_pos = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+                    "object_cfg": SceneEntityCfg(f"clutter_object{i+1}")
+                })
+                setattr(self, f"clutter_position{i+1}", clutter_pos)
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -227,60 +213,20 @@ class EventCfg:
         },
     )
 
-    reset_clutter1_position = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
-            "velocity_range": {},
-            "asset_cfg": SceneEntityCfg("clutter_object1", body_names="Clutter00"),
-        },
-    )
-    reset_clutter2_position = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
-            "velocity_range": {},
-            "asset_cfg": SceneEntityCfg("clutter_object2", body_names="Clutter01"),
-        },
-    )
-    reset_clutter3_position = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
-            "velocity_range": {},
-            "asset_cfg": SceneEntityCfg("clutter_object3", body_names="Clutter02"),
-        },
-    )
-    reset_clutter4_position = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
-            "velocity_range": {},
-            "asset_cfg": SceneEntityCfg("clutter_object4", body_names="Clutter03"),
-        },
-    )
-    reset_clutter5_position = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
-            "velocity_range": {},
-            "asset_cfg": SceneEntityCfg("clutter_object5", body_names="Clutter04"),
-        },
-    )
-    reset_clutter6_position = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
-            "velocity_range": {},
-            "asset_cfg": SceneEntityCfg("clutter_object6", body_names="Clutter05"),
-        },
-    )
+    def __post_init__(self):
+        """Initialize with a variable number of clutter object reset events."""
+        num_clutter_objects = 6
+        for i in range(num_clutter_objects):
+            reset_clutter = EventTerm(
+                func=mdp.reset_root_state_uniform,
+                mode="reset",
+                params={
+                    "pose_range": {"x": (-0.1, 0.1), "y": (-0.2, 0.2), "z": (0.15, 0.2)},
+                    "velocity_range": {},
+                    "asset_cfg": SceneEntityCfg(f"clutter_object{i+1}", body_names=f"Clutter0{i}"),
+                },
+            )
+            setattr(self, f"reset_clutter{i+1}_position", reset_clutter)
 
 
 @configclass
