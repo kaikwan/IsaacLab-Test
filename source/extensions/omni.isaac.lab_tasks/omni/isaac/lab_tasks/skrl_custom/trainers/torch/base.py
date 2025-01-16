@@ -211,7 +211,13 @@ class Trainer:
             else:
                 if terminated.any() or truncated.any():
                     with torch.no_grad():
-                        states, infos = self.env.reset()
+                        states, infos = self.env.reset() # states is just observation, not full sim state
+                        curr_state = self.env.scene.get_state(False) # curr_state is full sim state
+                        num_clutter_objects = 6
+                        for i in range(num_clutter_objects):
+                            pose = curr_state["rigid_object"][f"clutter_object{i+1}"]['root_pose']
+                            pose[:, :3] = torch.tensor([0.5, 0, i/3]).to(pose.device) # just demo with height set to i/3 - spawn with z-stacked pos
+                        self.env.reset_to(curr_state, None)
                 else:
                     states = next_states
 
