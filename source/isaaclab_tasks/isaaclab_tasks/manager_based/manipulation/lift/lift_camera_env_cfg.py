@@ -133,6 +133,23 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
 
+    # camera
+    camera = CameraCfg(
+        prim_path="{ENV_REGEX_NS}/table_cam",
+        update_period=0.1,
+        # height=180,
+        # width=320,
+        height=128,
+        width=128,
+        data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(
+            focal_length=25.0, focus_distance=400.0, horizontal_aperture=20.955,# clipping_range=(0.05, 2.0)
+        ),
+        # offset=CameraCfg.OffsetCfg(pos=(-0.71, 0.955, 1.005), rot=(-0.41, -0.25, 0.45, 0.748), convention="opengl"),
+        offset=CameraCfg.OffsetCfg(pos=(1.5, 0, 0.6), rot=(0.60503, 0.36597, 0.36597, 0.60503), convention="opengl"),
+        semantic_filter="class:*",
+        colorize_semantic_segmentation=False,
+    )
 
     def __post_init__(self):
         """Initialize with a variable number of clutter objects."""
@@ -177,21 +194,24 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel)
-        object_position = ObsTerm(func=mdp.object_position_in_robot_root_frame)
-        target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
-        actions = ObsTerm(func=mdp.last_action)
+        # joint_vel = ObsTerm(func=mdp.joint_vel_rel)
+        # object_position = ObsTerm(func=mdp.object_position_in_robot_root_frame)
+        # target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
+        # actions = ObsTerm(func=mdp.last_action)
+        rgb = ObsTerm(func=mdp.get_camera_data, params={"type": "rgb"})
+        # instance_id_segmentation_fast = ObsTerm(func=mdp.get_camera_data, params={"type": "instance_id_segmentation_fast"})
+
 
         def __post_init__(self):
             self.enable_corruption = True
-            self.concatenate_terms = True
+            self.concatenate_terms = False
 
             """Initialize with a variable number of clutter objects."""
-            for i in range(num_clutter_objects):
-                clutter_pos = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-                    "object_cfg": SceneEntityCfg(f"clutter_object{i+1}")
-                })
-                setattr(self, f"clutter_position{i+1}", clutter_pos)
+            # for i in range(num_clutter_objects):
+            #     clutter_pos = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
+            #         "object_cfg": SceneEntityCfg(f"clutter_object{i+1}")
+            #     })
+            #     setattr(self, f"clutter_position{i+1}", clutter_pos)
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -212,6 +232,7 @@ class EventCfg:
             "asset_cfg": SceneEntityCfg("object", body_names="Object"),
         },
     )
+
 
 
 @configclass
@@ -262,7 +283,7 @@ class CurriculumCfg:
 
 
 @configclass
-class LiftEnvCfg(CustomManagerBasedRLEnvCfg):
+class LiftCameraEnvCfg(CustomManagerBasedRLEnvCfg):
     """Configuration for the lifting environment."""
 
     # Scene settings
