@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import random
+
+import isaaclab.sim as sim_utils
 from isaaclab.assets import RigidObjectCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
@@ -10,7 +13,6 @@ from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
-import isaaclab.sim as sim_utils
 
 from isaaclab_tasks.manager_based.manipulation.lift import mdp
 from isaaclab_tasks.manager_based.manipulation.lift.lift_camera_env_cfg import LiftCameraEnvCfg
@@ -20,9 +22,6 @@ from isaaclab_tasks.manager_based.manipulation.lift.lift_camera_env_cfg import L
 ##
 from isaaclab.markers.config import FRAME_MARKER_CFG  # isort: skip
 from isaaclab_assets.robots.franka import FRANKA_PANDA_CFG  # isort: skip
-
-import random
-
 
 
 cfg_cuboid = sim_utils.CuboidCfg(
@@ -52,21 +51,17 @@ objects_cfg = [
     cfg_capsule,
 ]
 
+
 def define_objects(origin, idx):
     obj_cfg = objects_cfg[idx % len(objects_cfg)]
-    pos = [
-        origin[0],
-        origin[1],
-        origin[2]
-    ]
+    pos = [origin[0], origin[1], origin[2]]
 
     return RigidObjectCfg(
         prim_path=f"{{ENV_REGEX_NS}}/Clutter{idx:02d}",
-        init_state=RigidObjectCfg.InitialStateCfg(
-            pos=pos, rot=[1, 0, 0, 0]
-        ),
-        spawn=obj_cfg
+        init_state=RigidObjectCfg.InitialStateCfg(pos=pos, rot=[1, 0, 0, 0]),
+        spawn=obj_cfg,
     )
+
 
 @configclass
 class FrankaCubeLiftCustomCameraEnvCfg(LiftCameraEnvCfg):
@@ -129,11 +124,11 @@ class FrankaCubeLiftCustomCameraEnvCfg(LiftCameraEnvCfg):
 
         # Spawn objects
         self.scene.clutter_object1 = define_objects([0.5, 0, 0], 0)
-        # self.scene.clutter_object2 = define_objects([0.5, 0, 0], 1)
-        # self.scene.clutter_object3 = define_objects([0.5, 0, 0], 2)
-        # self.scene.clutter_object4 = define_objects([0.5, 0, 0], 3)
-        # self.scene.clutter_object5 = define_objects([0.5, 0, 0], 4)
-        # self.scene.clutter_object6 = define_objects([0.5, 0, 0], 5)
+        self.scene.clutter_object2 = define_objects([0.5, 0, 0], 1)
+        self.scene.clutter_object3 = define_objects([0.5, 0, 0], 2)
+        self.scene.clutter_object4 = define_objects([0.5, 0, 0], 3)
+        self.scene.clutter_object5 = define_objects([0.5, 0, 0], 4)
+        self.scene.clutter_object6 = define_objects([0.5, 0, 0], 5)
 
         # Change some settings
         self.episode_length_s = 6.0

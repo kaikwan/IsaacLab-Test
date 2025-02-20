@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import random
+
+import isaaclab.sim as sim_utils
 from isaaclab.assets import RigidObjectCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
@@ -10,7 +13,6 @@ from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
-import isaaclab.sim as sim_utils
 
 from isaaclab_tasks.manager_based.manipulation.lift import mdp
 from isaaclab_tasks.manager_based.manipulation.lift.lift_env_cfg import LiftEnvCfg
@@ -20,9 +22,6 @@ from isaaclab_tasks.manager_based.manipulation.lift.lift_env_cfg import LiftEnvC
 ##
 from isaaclab.markers.config import FRAME_MARKER_CFG  # isort: skip
 from isaaclab_assets.robots.franka import FRANKA_PANDA_CFG  # isort: skip
-
-import random
-
 
 
 cfg_cuboid = sim_utils.CuboidCfg(
@@ -52,21 +51,17 @@ objects_cfg = [
     cfg_capsule,
 ]
 
+
 def define_objects(origin, idx):
     obj_cfg = objects_cfg[idx % len(objects_cfg)]
-    pos = [
-        origin[0],
-        origin[1],
-        origin[2]
-    ]
+    pos = [origin[0], origin[1], origin[2]]
 
     return RigidObjectCfg(
         prim_path=f"{{ENV_REGEX_NS}}/Clutter{idx:02d}",
-        init_state=RigidObjectCfg.InitialStateCfg(
-            pos=pos, rot=[1, 0, 0, 0]
-        ),
-        spawn=obj_cfg
+        init_state=RigidObjectCfg.InitialStateCfg(pos=pos, rot=[1, 0, 0, 0]),
+        spawn=obj_cfg,
     )
+
 
 @configclass
 class FrankaCubeLiftCustomEnvCfg(LiftEnvCfg):
@@ -75,7 +70,10 @@ class FrankaCubeLiftCustomEnvCfg(LiftEnvCfg):
         super().__post_init__()
 
         # Set Franka as robot
-        self.scene.robot = FRANKA_PANDA_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = FRANKA_PANDA_CFG.replace(
+            prim_path="{ENV_REGEX_NS}/Robot",
+            init_state=FRANKA_PANDA_CFG.init_state.replace(pos=[0.0, 0, -0.15], rot=[1, 0, 0, 0]),
+        )
 
         # Set actions for the specific robot type (franka)
         self.actions.arm_action = mdp.JointPositionActionCfg(
@@ -90,10 +88,14 @@ class FrankaCubeLiftCustomEnvCfg(LiftEnvCfg):
         # Set the body name for the end effector
         self.commands.object_pose.body_name = "panda_hand"
 
+        origin = [0.6, 0, 0.0]
+        object_pose_offset = [0.0, 0.0, 0.055]
+        object_pose = [origin[i] + object_pose_offset[i] for i in range(len(origin))]
+
         # Set Cube as object
         self.scene.object = RigidObjectCfg(
             prim_path="{ENV_REGEX_NS}/Object",
-            init_state=RigidObjectCfg.InitialStateCfg(pos=[0.5, 0, 0.055], rot=[1, 0, 0, 0]),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=object_pose, rot=[1, 0, 0, 0]),
             spawn=UsdFileCfg(
                 usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/DexCube/dex_cube_instanceable.usd",
                 scale=(0.8, 0.8, 0.8),
@@ -128,12 +130,12 @@ class FrankaCubeLiftCustomEnvCfg(LiftEnvCfg):
         )
 
         # Spawn objects
-        self.scene.clutter_object1 = define_objects([0.5, 0, 0], 0)
-        # self.scene.clutter_object2 = define_objects([0.5, 0, 0], 1)
-        # self.scene.clutter_object3 = define_objects([0.5, 0, 0], 2)
-        # self.scene.clutter_object4 = define_objects([0.5, 0, 0], 3)
-        # self.scene.clutter_object5 = define_objects([0.5, 0, 0], 4)
-        # self.scene.clutter_object6 = define_objects([0.5, 0, 0], 5)
+        self.scene.clutter_object1 = define_objects(origin, 0)
+        self.scene.clutter_object2 = define_objects(origin, 1)
+        self.scene.clutter_object3 = define_objects(origin, 2)
+        self.scene.clutter_object4 = define_objects(origin, 3)
+        self.scene.clutter_object5 = define_objects(origin, 4)
+        self.scene.clutter_object6 = define_objects(origin, 5)
 
         # Change some settings
         self.episode_length_s = 6.0

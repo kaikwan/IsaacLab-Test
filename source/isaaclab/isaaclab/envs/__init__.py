@@ -44,6 +44,8 @@ For more information about the workflow design patterns, see the `Task Design Wo
 
 from . import mdp, ui
 from .common import VecEnvObs, VecEnvStepReturn, ViewerCfg
+from .custom_manager_based_rl_env import CustomManagerBasedRLEnv
+from .custom_manager_based_rl_env_cfg import CustomManagerBasedRLEnvCfg
 from .direct_marl_env import DirectMARLEnv
 from .direct_marl_env_cfg import DirectMARLEnvCfg
 from .direct_rl_env import DirectRLEnv
@@ -52,8 +54,6 @@ from .manager_based_env import ManagerBasedEnv
 from .manager_based_env_cfg import ManagerBasedEnvCfg
 from .manager_based_rl_env import ManagerBasedRLEnv
 from .manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
-from .custom_manager_based_rl_env import CustomManagerBasedRLEnv
-from .custom_manager_based_rl_env_cfg import CustomManagerBasedRLEnvCfg
 from .manager_based_rl_mimic_env import ManagerBasedRLMimicEnv
 from .mimic_env_cfg import *
 from .utils.marl import multi_agent_to_single_agent, multi_agent_with_one_agent

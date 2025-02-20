@@ -3,7 +3,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import torch
 from dataclasses import MISSING
+from typing import List, Union
+
+from pxr import Gf
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg, DeformableObjectCfg, RigidObjectCfg
@@ -23,27 +27,22 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from . import mdp
-import torch
 
-from pxr import Gf
-from typing import List, Union
-
-
-
-
-origin = [0.5, 0, 0]
+origin = [0.6, 0, 0.0]
 
 
 ##
 # Scene definition
 ##
 
-box_length = 0.6096
-box_width = 0.9144
-box_height = 0.3048
+box_length = 0.4
+box_width = 0.5
+box_height = 0.4
+lip_height = 0.03
 thickness = 0.0010
 
-num_clutter_objects = 1
+num_clutter_objects = 6
+
 
 @configclass
 class ObjectTableSceneCfg(InteractiveSceneCfg):
@@ -60,70 +59,102 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     object: RigidObjectCfg | DeformableObjectCfg = MISSING
 
     # Table
-    table = AssetBaseCfg(
-        prim_path="{ENV_REGEX_NS}/Table",
-        init_state=AssetBaseCfg.InitialStateCfg(pos=[0.5, 0, 0], rot=[0.707, 0, 0, 0.707]),
-        spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
-    )
+    # table = AssetBaseCfg(
+    #     prim_path="{ENV_REGEX_NS}/Table",
+    #     init_state=AssetBaseCfg.InitialStateCfg(pos=[0.5, 0, 0], rot=[0.707, 0, 0, 0.707]),
+    #     spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
+    # )
 
-    # # Box
-    # wall1 = RigidObjectCfg(
-    #     prim_path="{ENV_REGEX_NS}/Wall1",
-    #     init_state=RigidObjectCfg.InitialStateCfg(
-    #         pos=(torch.tensor(origin) + torch.tensor([-box_length / 2, 0, box_height / 2])).tolist(),
-    #         rot=[0, 0, 0, 1],    # No rotation
-    #     ),
-    #     spawn=sim_utils.CuboidCfg(
-    #         size=(thickness, box_width, box_height),
-    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
-    #         mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
-    #         collision_props=sim_utils.CollisionPropertiesCfg(),
-    #     )
-    # )
-    # wall2 = RigidObjectCfg(
-    #     prim_path="{ENV_REGEX_NS}/Wall2",
-    #     init_state=RigidObjectCfg.InitialStateCfg(
-    #         pos=(torch.tensor(origin) + torch.tensor([0, -box_width / 2, box_height / 2])).tolist(),
-    #         rot=[0, 0, 0, 1],    # No rotation
-    #     ),
-    #     spawn=sim_utils.CuboidCfg(
-    #         size=(box_length, thickness, box_height),
-    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
-    #         mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
-    #         collision_props=sim_utils.CollisionPropertiesCfg(),
-    #     )
-    # )
-    # wall3 = RigidObjectCfg(
-    #     prim_path="{ENV_REGEX_NS}/Wall3",
-    #     init_state=RigidObjectCfg.InitialStateCfg(
-    #         pos=(torch.tensor(origin) + torch.tensor([box_length / 2, 0, box_height / 2])).tolist(),
-    #         rot=[0, 0, 0, 1],    # No rotation
-    #     ),
-    #     spawn=sim_utils.CuboidCfg(
-    #         size=(thickness, box_width, box_height),
-    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
-    #         mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
-    #         collision_props=sim_utils.CollisionPropertiesCfg(),
-    #     )
-    # )
-    # wall4 = RigidObjectCfg(
-    #     prim_path="{ENV_REGEX_NS}/Wall4",
-    #     init_state=RigidObjectCfg.InitialStateCfg(
-    #         pos=(torch.tensor(origin) + torch.tensor([0, box_width / 2, box_height / 2])).tolist(),
-    #         rot=[0, 0, 0, 1],    # No rotation
-    #     ),
-    #     spawn=sim_utils.CuboidCfg(
-    #         size=(box_length, thickness, box_height),
-    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
-    #         mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
-    #         collision_props=sim_utils.CollisionPropertiesCfg(),
-    #     )
-    # )
+    # Box
+    bottom = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall1",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([0, 0, 0])).tolist(),
+            rot=[0, 0.7071068, 0, 0.7071068],  # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(thickness, box_width, box_length),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.5, 0.5, 0.0)),
+        ),
+    )
+    top = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall5",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([0, 0, box_height])).tolist(),
+            rot=[0, 0.7071068, 0, 0.7071068],  # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(thickness, box_width, box_length),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.5, 0.5, 0.0)),
+        ),
+    )
+    wall2 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall2",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([0, -box_width / 2, box_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],  # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(box_length, thickness, box_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.5, 0.5, 0.0)),
+        ),
+    )
+    wall4 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall4",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([0, box_width / 2, box_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],  # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(box_length, thickness, box_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.5, 0.5, 0.0)),
+        ),
+    )
+    wall3 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall3",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([box_length / 2, 0, box_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],  # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(thickness, box_width, box_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.5, 0.5, 0.0)),
+        ),
+    )
+    lip = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Wall6",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(torch.tensor(origin) + torch.tensor([-box_length / 2, 0, lip_height / 2])).tolist(),
+            rot=[0, 0, 0, 1],  # No rotation
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(thickness, box_width, lip_height),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=10000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.5, 0.5, 0.0)),
+        ),
+    )
 
     # plane
     plane = AssetBaseCfg(
         prim_path="/World/GroundPlane",
-        init_state=AssetBaseCfg.InitialStateCfg(pos=[0, 0, -1.05]),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=[0, 0, -0.3]),
         spawn=GroundPlaneCfg(),
     )
 
@@ -133,11 +164,11 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
 
-
     def __post_init__(self):
         """Initialize with a variable number of clutter objects."""
         for i in range(num_clutter_objects):
             setattr(self, f"clutter_object{i+1}", MISSING)
+
 
 ##
 # MDP settings
@@ -152,9 +183,9 @@ class CommandsCfg:
         asset_name="robot",
         body_name=MISSING,  # will be set by agent env cfg
         resampling_time_range=(5.0, 5.0),
-        debug_vis=False,
+        debug_vis=True,
         ranges=mdp.UniformPoseCommandCfg.Ranges(
-            pos_x=(0.5, 0.5), pos_y=(0.0, 0.0), pos_z=(0.4, 0.4), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
+            pos_x=(0.25, 0.25), pos_y=(0.0, 0.0), pos_z=(0.35, 0.35), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
         ),
     )
 
@@ -188,9 +219,10 @@ class ObservationsCfg:
 
             """Initialize with a variable number of clutter objects."""
             for i in range(num_clutter_objects):
-                clutter_pos = ObsTerm(func=mdp.clutter_position_in_robot_root_frame, params={
-                    "object_cfg": SceneEntityCfg(f"clutter_object{i+1}")
-                })
+                clutter_pos = ObsTerm(
+                    func=mdp.clutter_position_in_robot_root_frame,
+                    params={"object_cfg": SceneEntityCfg(f"clutter_object{i+1}")},
+                )
                 setattr(self, f"clutter_position{i+1}", clutter_pos)
 
     # observation groups
@@ -222,6 +254,17 @@ class RewardsCfg:
 
     lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.04}, weight=15.0)
 
+    object_goal_tracking = RewTerm(
+        func=mdp.object_goal_distance,
+        params={"std": 0.3, "minimal_height": 0.04, "command_name": "object_pose"},
+        weight=16.0,
+    )
+    object_goal_tracking_fine_grained = RewTerm(
+        func=mdp.object_goal_distance,
+        params={"std": 0.05, "minimal_height": 0.04, "command_name": "object_pose"},
+        weight=5.0,
+    )
+
     # action penalty
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
 
@@ -230,6 +273,15 @@ class RewardsCfg:
         weight=-1e-4,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
+
+    def __post_init__(self):
+        for i in range(num_clutter_objects):
+            clutter_dropping = RewTerm(
+                func=mdp.rew_root_height_below_minimum,
+                weight=0,
+                params={"minimum_height": -0.05, "asset_cfg": SceneEntityCfg(f"clutter_object{i+1}")},
+            )
+            setattr(self, f"clutter_drop{i+1}", clutter_dropping)
 
 
 @configclass
@@ -248,12 +300,24 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 50000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 25000}
     )
 
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 50000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 25000}
     )
+
+    reaching_object = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "reaching_object", "weight": 0, "num_steps": 25000}
+    )
+
+    def __post_init__(self):
+        for i in range(num_clutter_objects):
+            clutter_dropping = CurrTerm(
+                func=mdp.modify_reward_weight,
+                params={"term_name": f"clutter_drop{i+1}", "weight": -10, "num_steps": 15000},
+            )
+            setattr(self, f"clutter_drop{i+1}", clutter_dropping)
 
 
 ##
@@ -290,5 +354,6 @@ class LiftEnvCfg(CustomManagerBasedRLEnvCfg):
         self.sim.physx.bounce_threshold_velocity = 0.2
         self.sim.physx.bounce_threshold_velocity = 0.01
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4
-        self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024 * 8
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024 * 16
+        self.sim.physx.gpu_max_rigid_patch_count = 1024 * 1024
         self.sim.physx.friction_correlation_distance = 0.00625

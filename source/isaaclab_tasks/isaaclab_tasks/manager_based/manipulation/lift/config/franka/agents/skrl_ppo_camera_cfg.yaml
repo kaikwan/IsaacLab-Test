@@ -14,34 +14,20 @@ models:
     initial_log_std: 0.0
     network:
       - name: features_extractor
-        input: STATES["rgb"]
-        layers: 
-          - conv2d: {in_channels: 3, out_channels: 64, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 64, out_channels: 128, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 128, out_channels: 256, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 256, out_channels: 512, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 512, out_channels: 512, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
+        input: permute(STATES["rgb"], (0, 3, 1, 2))
+        layers:
+          - conv2d: {out_channels: 32, kernel_size: 8, stride: 4, padding: 0}
+          - conv2d: {out_channels: 64, kernel_size: 4, stride: 2, padding: 0}
+          - conv2d: {out_channels: 64, kernel_size: 3, stride: 1, padding: 0}
           - flatten
-          - linear: [1024]
-          - linear: [512]
         activations:
-          - relu
-          - relu
-          - relu
-          - relu
-          - relu
-          - relu
-          - relu
           - relu
       - name: net
         input: concatenate([features_extractor, STATES["joint_pos"]])
-        layers: 
-          - linear: [256]
+        layers:
           - linear: [128]
           - linear: [64]
         activations:
-          - elu
-          - elu
           - elu
     output: ACTIONS
   value:  # see deterministic_model parameters
@@ -49,34 +35,20 @@ models:
     clip_actions: False
     network:
       - name: features_extractor
-        input: STATES["rgb"]
-        layers: 
-          - conv2d: {in_channels: 3, out_channels: 64, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 64, out_channels: 128, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 128, out_channels: 256, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 256, out_channels: 512, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
-          - conv2d: {in_channels: 512, out_channels: 512, kernel_size: 3, stride: [2, 2], padding: [1, 1]}
+        input: permute(STATES["rgb"], (0, 3, 1, 2))
+        layers:
+          - conv2d: {out_channels: 32, kernel_size: 8, stride: 4, padding: 0}
+          - conv2d: {out_channels: 64, kernel_size: 4, stride: 2, padding: 0}
+          - conv2d: {out_channels: 64, kernel_size: 3, stride: 1, padding: 0}
           - flatten
-          - linear: [1024]
-          - linear: [512]
         activations:
-          - relu
-          - relu
-          - relu
-          - relu
-          - relu
-          - relu
-          - relu
           - relu
       - name: net
         input: concatenate([features_extractor, STATES["joint_pos"]])
-        layers: 
-          - linear: [256]
+        layers:
           - linear: [128]
           - linear: [64]
         activations:
-          - elu
-          - elu
           - elu
     output: ONE
 
@@ -87,21 +59,20 @@ memory:
   class: RandomMemory
   memory_size: -1  # automatically determined (same as agent:rollouts)
 
-
 # PPO agent configuration (field names are from PPO_DEFAULT_CONFIG)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html
 agent:
   class: PPO
-  rollouts: 24
-  learning_epochs: 8
-  mini_batches: 4
+  rollouts: 64
+  learning_epochs: 4
+  mini_batches: 32
   discount_factor: 0.99
   lambda: 0.95
-  learning_rate: 1.0e-03
+  learning_rate: 1.0e-04
   learning_rate_scheduler: KLAdaptiveLR
   learning_rate_scheduler_kwargs:
     kl_threshold: 0.01
-  state_preprocessor: RunningStandardScaler
+  state_preprocessor: null
   state_preprocessor_kwargs: null
   value_preprocessor: RunningStandardScaler
   value_preprocessor_kwargs: null
@@ -114,13 +85,13 @@ agent:
   entropy_loss_scale: 0.001
   value_loss_scale: 2.0
   kl_threshold: 0.0
-  rewards_shaper_scale: 0.01
+  rewards_shaper_scale: 0.1
   time_limit_bootstrap: False
   # logging and checkpoint
   experiment:
     directory: "franka_lift"
     experiment_name: ""
-    write_interval: 1000
+    write_interval: 500
     checkpoint_interval: 1000
 
 
@@ -128,6 +99,6 @@ agent:
 # https://skrl.readthedocs.io/en/latest/api/trainers/sequential.html
 trainer:
   class: SequentialTrainer
-  timesteps: 100000
-  num_clutter_objects: 1
+  timesteps: 1000000
+  num_clutter_objects: 6
   environment_info: log

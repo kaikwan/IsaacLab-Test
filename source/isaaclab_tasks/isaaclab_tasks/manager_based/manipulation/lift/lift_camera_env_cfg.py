@@ -3,7 +3,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import torch
 from dataclasses import MISSING
+from typing import List, Union
+
+from pxr import Gf
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg, DeformableObjectCfg, RigidObjectCfg
@@ -16,20 +20,13 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import CameraCfg
+from isaaclab.sensors import TiledCameraCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import FrameTransformerCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from . import mdp
-import torch
-
-from pxr import Gf
-from typing import List, Union
-
-
-
 
 origin = [0.5, 0, 0]
 
@@ -43,7 +40,8 @@ box_width = 0.9144
 box_height = 0.3048
 thickness = 0.0010
 
-num_clutter_objects = 1
+num_clutter_objects = 6
+
 
 @configclass
 class ObjectTableSceneCfg(InteractiveSceneCfg):
@@ -134,27 +132,27 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     )
 
     # camera
-    camera = CameraCfg(
+    camera: TiledCameraCfg = TiledCameraCfg(
         prim_path="{ENV_REGEX_NS}/table_cam",
         update_period=0.1,
-        # height=180,
-        # width=320,
-        height=128,
-        width=128,
+        offset=TiledCameraCfg.OffsetCfg(
+            pos=(1.1, 0, 0.7), rot=(0.66446, 0.24185, 0.24185, 0.66446), convention="opengl"
+        ),
         data_types=["rgb"],
         spawn=sim_utils.PinholeCameraCfg(
-            focal_length=25.0, focus_distance=400.0, horizontal_aperture=20.955,# clipping_range=(0.05, 2.0)
+            focal_length=25.0,
+            focus_distance=400.0,
+            horizontal_aperture=20.955,  # clipping_range=(0.05, 2.0)
         ),
-        # offset=CameraCfg.OffsetCfg(pos=(-0.71, 0.955, 1.005), rot=(-0.41, -0.25, 0.45, 0.748), convention="opengl"),
-        offset=CameraCfg.OffsetCfg(pos=(1.5, 0, 0.6), rot=(0.60503, 0.36597, 0.36597, 0.60503), convention="opengl"),
-        semantic_filter="class:*",
-        colorize_semantic_segmentation=False,
+        width=100,
+        height=100,
     )
 
     def __post_init__(self):
         """Initialize with a variable number of clutter objects."""
         for i in range(num_clutter_objects):
             setattr(self, f"clutter_object{i+1}", MISSING)
+
 
 ##
 # MDP settings
@@ -199,8 +197,6 @@ class ObservationsCfg:
         # target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
         # actions = ObsTerm(func=mdp.last_action)
         rgb = ObsTerm(func=mdp.get_camera_data, params={"type": "rgb"})
-        # instance_id_segmentation_fast = ObsTerm(func=mdp.get_camera_data, params={"type": "instance_id_segmentation_fast"})
-
 
         def __post_init__(self):
             self.enable_corruption = True
@@ -232,7 +228,6 @@ class EventCfg:
             "asset_cfg": SceneEntityCfg("object", body_names="Object"),
         },
     )
-
 
 
 @configclass

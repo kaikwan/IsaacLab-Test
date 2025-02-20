@@ -30,6 +30,7 @@ def object_position_in_robot_root_frame(
     )
     return object_pos_b
 
+
 def clutter_position_in_robot_root_frame(
     env: ManagerBasedRLEnv,
     robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -44,11 +45,16 @@ def clutter_position_in_robot_root_frame(
     )
     return object_pos_b
 
+
 def get_camera_data(
-    env: ManagerBasedRLEnv,
-    camera_cfg: SceneEntityCfg = SceneEntityCfg("camera"),
-    type: str = "rgb"
+    env: ManagerBasedRLEnv, camera_cfg: SceneEntityCfg = SceneEntityCfg("camera"), type: str = "rgb"
 ) -> torch.Tensor:
-  
+
     camera = env.scene[camera_cfg.name]
-    return camera.data.output[type].permute(0, 3, 1, 2)
+    camera_data = camera.data.output[type] / 255.0
+    mean_tensor = torch.mean(camera_data, dim=(1, 2), keepdim=True)
+    camera_data -= mean_tensor
+    # import matplotlib.pyplot as plt
+    # plt.imshow(camera_data[0].cpu())
+    # plt.show()
+    return camera_data

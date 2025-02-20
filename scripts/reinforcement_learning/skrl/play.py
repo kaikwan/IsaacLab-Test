@@ -83,6 +83,7 @@ elif args_cli.ml_framework.startswith("jax"):
     from skrl.utils.runner.jax import Runner
 
 from isaaclab_rl.skrl import SkrlVecEnvWrapper
+from skrl.utils.nets.config_adversary import LinearNetwork
 
 from isaaclab.envs import DirectMARLEnv, multi_agent_to_single_agent
 from isaaclab.utils.dict import print_dict
@@ -170,6 +171,10 @@ def main():
 
     # reset environment
     obs, _ = env.reset()
+    num_clutter_objects = experiment_cfg["trainer"]["num_clutter_objects"]
+    adversary = LinearNetwork(1, 64, 64, num_clutter_objects)
+    zero_actions = torch.zeros((env.num_envs, env.action_space.shape[0])).to(env.device)
+
     timestep = 0
     # simulate environment
     while simulation_app.is_running():
@@ -181,7 +186,18 @@ def main():
             outputs = runner.agent.act(obs, timestep=0, timesteps=0)
             actions = outputs[-1].get("mean_actions", outputs[0])
             # env stepping
-            obs, _, _, _, _ = env.step(actions)
+            obs, rewards, terminated, truncated, infos = env.step(actions)
+
+            if terminated.any() or truncated.any():
+                reset_env_ids = [i for i in range(env.num_envs) if terminated[i] or truncated[i]]
+                if len(reset_env_ids) == env.num_envs:
+                    with torch.no_grad():
+                        # loop through all envs that need to be reset and update their adversary action
+                        for i in reset_env_ids:
+                            env.unwrapped.adversary_action[i] = adversary.sample()
+                        for i in range(100):
+                            env.step(zero_actions)
+
         if args_cli.video:
             timestep += 1
             # exit the play loop after recording one video
