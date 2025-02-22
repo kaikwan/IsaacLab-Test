@@ -42,7 +42,7 @@ parser.add_argument(
     "--algorithm",
     type=str,
     default="PPO",
-    choices=["AMP", "PPO", "IPPO", "MAPPO"],
+    choices=["AMP", "PPO", "IPPO", "MAPPO", "PPO_RNN"],
     help="The RL algorithm used for training the skrl agent.",
 )
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
@@ -165,37 +165,47 @@ def main():
 
     print(f"[INFO] Loading model checkpoint from: {resume_path}")
     runner.agent.load(resume_path)
-    # set agent to evaluation mode
-    runner.agent.set_running_mode("eval")
 
-    # reset environment
-    obs, _ = env.reset()
-    timestep = 0
-    # simulate environment
-    while simulation_app.is_running():
-        start_time = time.time()
 
-        # run everything in inference mode
-        with torch.inference_mode():
-            # agent stepping
-            outputs = runner.agent.act(obs, timestep=0, timesteps=0)
-            actions = outputs[-1].get("mean_actions", outputs[0])
-            # env stepping
-            obs, _, _, _, _ = env.step(actions)
-        if args_cli.video:
-            timestep += 1
-            # exit the play loop after recording one video
-            if timestep == args_cli.video_length:
-                break
-
-        # time delay for real-time evaluation
-        sleep_time = dt - (time.time() - start_time)
-        if args_cli.real_time and sleep_time > 0:
-            time.sleep(sleep_time)
+    # run training
+    runner.run("eval")
 
     # close the simulator
     env.close()
 
+    
+    #############################################
+    # COMMENT ABOVE CODE AND UNCOMMENT BELOW
+    # FOR NORMAL AGENT EVAL WITH REAL-TIME
+    # DOES NOT WORK WITH PPO RNN DUE TO RNN STATES
+    #############################################
+    # # set agent to evaluation mode
+    # runner.agent.set_running_mode("eval")
+
+    # # reset environment
+    # obs, _ = env.reset()
+    # timestep = 0
+    # # simulate environment
+    # while simulation_app.is_running():
+    #     start_time = time.time()
+
+    #     # run everything in inference mode
+    #     with torch.inference_mode():
+    #         # agent stepping
+    #         outputs = runner.agent.act(obs, timestep=0, timesteps=0)
+    #         actions = outputs[-1].get("mean_actions", outputs[0])
+    #         # env stepping
+    #         obs, _, _, _, _ = env.step(actions)
+    #     if args_cli.video:
+    #         timestep += 1
+    #         # exit the play loop after recording one video
+    #         if timestep == args_cli.video_length:
+    #             break
+
+    #     # time delay for real-time evaluation
+    #     sleep_time = dt - (time.time() - start_time)
+    #     if args_cli.real_time and sleep_time > 0:
+    #         time.sleep(sleep_time)
 
 if __name__ == "__main__":
     # run the main function
