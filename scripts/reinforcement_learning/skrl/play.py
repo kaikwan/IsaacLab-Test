@@ -26,6 +26,7 @@ parser.add_argument(
 parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint.")
+parser.add_argument("--lstm_checkpoint", type=str, default=None, help="Path to LSTM model checkpoint.")
 parser.add_argument(
     "--use_pretrained_checkpoint",
     action="store_true",
@@ -62,8 +63,6 @@ simulation_app = app_launcher.app
 
 import gymnasium as gym
 import os
-import time
-import torch
 
 import skrl
 from packaging import version
@@ -128,6 +127,9 @@ def main():
         )
     log_dir = os.path.dirname(os.path.dirname(resume_path))
 
+    if args_cli.lstm_checkpoint:
+        lstm_resume_path = os.path.abspath(args_cli.lstm_checkpoint)
+
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
 
@@ -136,10 +138,10 @@ def main():
         env = multi_agent_to_single_agent(env)
 
     # get environment (physics) dt for real-time evaluation
-    try:
-        dt = env.physics_dt
-    except AttributeError:
-        dt = env.unwrapped.physics_dt
+    # try:
+    #     dt = env.physics_dt
+    # except AttributeError:
+    #     dt = env.unwrapped.physics_dt
 
     # wrap for video recording
     if args_cli.video:
@@ -165,7 +167,8 @@ def main():
 
     print(f"[INFO] Loading model checkpoint from: {resume_path}")
     runner.agent.load(resume_path)
-
+    print(f"[INFO] Loading LSTM model checkpoint from: {lstm_resume_path}")
+    runner.agent.load_lstm(lstm_resume_path)
 
     # run training
     runner.run("eval")
@@ -173,7 +176,6 @@ def main():
     # close the simulator
     env.close()
 
-    
     #############################################
     # COMMENT ABOVE CODE AND UNCOMMENT BELOW
     # FOR NORMAL AGENT EVAL WITH REAL-TIME
@@ -206,6 +208,7 @@ def main():
     #     sleep_time = dt - (time.time() - start_time)
     #     if args_cli.real_time and sleep_time > 0:
     #         time.sleep(sleep_time)
+
 
 if __name__ == "__main__":
     # run the main function

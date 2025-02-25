@@ -30,6 +30,7 @@ parser.add_argument(
 )
 parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint to resume training.")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--lstm_checkpoint", type=str, default=None, help="Path to LSTM model checkpoint.")
 parser.add_argument(
     "--ml_framework",
     type=str,
@@ -155,6 +156,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # get checkpoint path (to resume training)
     resume_path = retrieve_file_path(args_cli.checkpoint) if args_cli.checkpoint else None
+    lstm_checkpoint_path = retrieve_file_path(args_cli.lstm_checkpoint) if args_cli.lstm_checkpoint else None
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
@@ -186,6 +188,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     if resume_path:
         print(f"[INFO] Loading model checkpoint from: {resume_path}")
         runner.agent.load(resume_path)
+
+    if lstm_checkpoint_path:
+        print(f"[INFO] Loading LSTM model checkpoint from: {lstm_checkpoint_path}")
+        runner.agent.load_lstm(lstm_checkpoint_path)
 
     # run training
     runner.run()

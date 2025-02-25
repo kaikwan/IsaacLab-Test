@@ -14,6 +14,7 @@ the event introduced by the function.
 
 from __future__ import annotations
 
+import random
 import torch
 from typing import TYPE_CHECKING, Literal
 
@@ -678,6 +679,42 @@ def reset_root_state_uniform(
     # set into the physics simulation
     asset.write_root_pose_to_sim(torch.cat([positions, orientations], dim=-1), env_ids=env_ids)
     asset.write_root_velocity_to_sim(velocities, env_ids=env_ids)
+
+
+def reset_root_state_choice(
+    env: ManagerBasedEnv,
+    env_ids: torch.Tensor,
+    pose_choices: dict[str, list[float]],
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    """Reset the asset root state to a random position and velocity chosen from the given choices.
+
+    This function randomizes the root position and velocity of the asset.
+
+    * It samples the root position from the given choices and adds them to the default root position, before setting
+      them into the physics simulation.
+    * It samples the root orientation from the given choices and sets them into the physics simulation.
+    * It samples the root velocity from the given choices and sets them into the physics simulation.
+
+    The function takes a dictionary of pose and velocity choices for each axis and rotation. The keys of the
+    dictionary are ``x``, ``y``, ``z``, ``roll``, ``pitch``, and ``yaw``. The values are lists of choices.
+    If the dictionary does not contain a key, the position or velocity is set to zero for that axis.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject | Articulation = env.scene[asset_cfg.name]
+    # get default root state
+    root_states = asset.data.default_root_state[env_ids].clone()
+
+    # poses
+    range_list = [pose_choices.get(key, [0.0]) for key in ["x", "y", "z", "roll", "pitch", "yaw"]]
+    sampled_poses = torch.tensor(
+        [[random.choice(choices) for choices in range_list] for _ in range(len(env_ids))], device=asset.device
+    )
+    positions = root_states[:, 0:3] + env.scene.env_origins[env_ids] + sampled_poses[:, 0:3]
+    orientations = math_utils.default_orientation(len(env_ids), device=asset.device)
+
+    # set into the physics simulation
+    asset.write_root_pose_to_sim(torch.cat([positions, orientations], dim=-1), env_ids=env_ids)
 
 
 def reset_root_state_with_random_orientation(
