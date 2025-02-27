@@ -106,11 +106,11 @@ class ObservationsCfg:
         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel = ObsTerm(func=mdp.joint_vel_rel)
         object_idx = ObsTerm(func=mdp.object_idx)
-        # target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
         actions = ObsTerm(func=mdp.last_action)
         object_position = ObsTerm(
             func=mdp.object_position_in_robot_root_frame, params={"object_cfg": SceneEntityCfg("object1")}
         )
+        # target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
 
         def __post_init__(self):
             self.enable_corruption = True
@@ -154,9 +154,9 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    # reaching_object = RewTerm(
-    #     func=mdp.object_ee_distance, params={"std": 0.1, "object_cfg": SceneEntityCfg("object1")}, weight=100.0
-    # )
+    reaching_object = RewTerm(
+        func=mdp.object_ee_distance, params={"std": 0.1, "object_cfg": SceneEntityCfg("object1")}, weight=100.0
+    )
 
     # lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.04}, weight=15.0)
 
@@ -173,11 +173,11 @@ class RewardsCfg:
     # )
 
     # action penalty
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
+    action_rate = RewTerm(func=mdp.action_rate_l2, weight=0)
 
     joint_vel = RewTerm(
         func=mdp.joint_vel_l2,
-        weight=-1e-4,
+        weight=0,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 
@@ -198,11 +198,11 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 20000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 50000}
     )
 
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 20000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 50000}
     )
 
 

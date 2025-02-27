@@ -52,7 +52,7 @@ def object_ee_distance(
 def object_idx(
     env: ManagerBasedRLEnv,
     object1_cfgs: SceneEntityCfg = SceneEntityCfg("object1"),
-    threshold: float = 0.05,
+    threshold: float = 0.075,
 ) -> torch.Tensor:
     """The index of the object that has distance within the threshold radius."""
     res = torch.tensor([[0]] * env.scene.num_envs).to(env.device)

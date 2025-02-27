@@ -53,7 +53,7 @@ agent:
   state_preprocessor_kwargs: null
   value_preprocessor: RunningStandardScaler
   value_preprocessor_kwargs: null
-  random_timesteps: 0
+  random_timesteps: 15000
   learning_starts: 0
   grad_norm_clip: 1.0
   ratio_clip: 0.2
