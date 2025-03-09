@@ -1299,6 +1299,8 @@ class Articulation(AssetBase):
         self._data.default_root_state = default_root_state.repeat(self.num_instances, 1)
         # -- joint state
         # joint pos
+        print("self.cfg.init_state.joint_pos ", self.cfg.init_state.joint_pos)
+        print("self.joint_names", self.joint_names)
         indices_list, _, values_list = string_utils.resolve_matching_names_values(
             self.cfg.init_state.joint_pos, self.joint_names
         )

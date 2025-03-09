@@ -82,10 +82,10 @@ def main():
     # create environment
     env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
     # check environment name (for reach , we don't allow the gripper)
-    if "Reach" in args_cli.task:
-        omni.log.warn(
-            f"The environment '{args_cli.task}' does not support gripper control. The device command will be ignored."
-        )
+    # if "Reach" in args_cli.task:
+    #     omni.log.warn(
+    #         f"The environment '{args_cli.task}' does not support gripper control. The device command will be ignored."
+    #     )
 
     # create controller
     if args_cli.teleop_device.lower() == "keyboard":
