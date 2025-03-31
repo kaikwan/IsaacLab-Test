@@ -30,6 +30,34 @@ class RslRlPpoActorCriticCfg:
 
 
 @configclass
+class RslRlPpoActorCriticRecurrentCfg:
+    """Configuration for the PPO actor-critic networks."""
+
+    class_name: str = "ActorCritic"
+    """The policy class name. Default is ActorCritic."""
+
+    init_noise_std: float = MISSING
+    """The initial noise standard deviation for the policy."""
+
+    actor_hidden_dims: list[int] = MISSING
+    """The hidden dimensions of the actor network."""
+
+    critic_hidden_dims: list[int] = MISSING
+    """The hidden dimensions of the critic network."""
+
+    activation: str = MISSING
+    """The activation function for the actor and critic networks."""
+
+    rnn_type: str = "lstm"
+    """The type of RNN to use. Default is LSTM."""
+
+    rnn_hidden_dim: int = 256
+    """The hidden dimension of the RNN."""
+
+    rnn_num_layers: int = 1
+    """The number of layers in the RNN."""
+
+@configclass
 class RslRlPpoAlgorithmCfg:
     """Configuration for the PPO algorithm."""
 

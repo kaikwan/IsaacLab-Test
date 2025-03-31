@@ -23,6 +23,8 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from . import mdp
 
+exploit = True
+
 ##
 # Scene definition
 ##
@@ -73,17 +75,15 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
 @configclass
 class CommandsCfg:
     """Command terms for the MDP."""
-
-
-#     object_pose = mdp.UniformPoseCommandCfg(
-#         asset_name="robot",
-#         body_name=MISSING,  # will be set by agent env cfg
-#         resampling_time_range=(5.0, 5.0),
-#         debug_vis=True,
-#         ranges=mdp.UniformPoseCommandCfg.Ranges(
-#             pos_x=(0.4, 0.6), pos_y=(-0.25, 0.25), pos_z=(0.25, 0.5), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
-#         ),
-#     )
+    object_pose = mdp.UniformPoseCommandCfg(
+        asset_name="robot",
+        body_name=MISSING,  # will be set by agent env cfg
+        resampling_time_range=(5.0, 5.0),
+        debug_vis=True,
+        ranges=mdp.UniformPoseCommandCfg.Ranges(
+            pos_x=(0.4, 0.6), pos_y=(-0.25, 0.25), pos_z=(0.25, 0.5), roll=(0.0, 0.0), pitch=(0.0, 0.0), yaw=(0.0, 0.0)
+        ),
+    )
 
 
 @configclass
@@ -107,10 +107,10 @@ class ObservationsCfg:
         joint_vel = ObsTerm(func=mdp.joint_vel_rel)
         object_idx = ObsTerm(func=mdp.object_idx)
         actions = ObsTerm(func=mdp.last_action)
-        object_position = ObsTerm(
-            func=mdp.object_position_in_robot_root_frame, params={"object_cfg": SceneEntityCfg("object1")}
-        )
-        # target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
+        # object_position = ObsTerm(
+        #     func=mdp.object_position_in_robot_root_frame, params={"object_cfg": SceneEntityCfg("object1")}
+        # )
+        target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
 
         def __post_init__(self):
             self.enable_corruption = True
@@ -126,28 +126,28 @@ class EventCfg:
 
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
 
-    reset_object_position = EventTerm(
-        func=mdp.reset_root_state_choice,
-        mode="reset",
-        params={
-            "pose_choices": {  # dict[str, list[float]],
-                "x": [0.15, -0.15],
-                "y": [0.15, -0.15],
-                "z": [0.0],
-            },
-            "asset_cfg": SceneEntityCfg("object1"),
-        },
-    )
-
     # reset_object_position = EventTerm(
-    #     func=mdp.reset_root_state_uniform,
+    #     func=mdp.reset_root_state_choice,
     #     mode="reset",
     #     params={
-    #         "pose_range": {"x": (-0.1, 0.1), "y": (-0.25, 0.25), "z": (0.0, 0.0)},
-    #         "velocity_range": {},
+    #         "pose_choices": {  # dict[str, list[float]],
+    #             "x": [0.15, -0.15],
+    #             "y": [0.15, -0.15],
+    #             "z": [0.0],
+    #         },
     #         "asset_cfg": SceneEntityCfg("object1"),
     #     },
     # )
+
+    reset_object_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.25, 0.25), "z": (0.0, 0.0)},
+            "velocity_range": {},
+            "asset_cfg": SceneEntityCfg("object1"),
+        },
+    )
 
 
 @configclass
@@ -158,19 +158,20 @@ class RewardsCfg:
         func=mdp.object_ee_distance, params={"std": 0.1, "object_cfg": SceneEntityCfg("object1")}, weight=100.0
     )
 
-    # lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.04}, weight=15.0)
+    if exploit:
+        lifting_object = RewTerm(func=mdp.object_is_lifted, params={"minimal_height": 0.04, "object_cfg": SceneEntityCfg("object1")}, weight=15.0)
 
-    # object_goal_tracking = RewTerm(
-    #     func=mdp.object_goal_distance,
-    #     params={"std": 0.3, "minimal_height": 0.04, "command_name": "object_pose"},
-    #     weight=16.0,
-    # )
+        object_goal_tracking = RewTerm(
+            func=mdp.object_goal_distance,
+            params={"std": 0.3, "minimal_height": 0.04, "command_name": "object_pose", "object_cfg": SceneEntityCfg("object1")},
+            weight=16.0,
+        )
 
-    # object_goal_tracking_fine_grained = RewTerm(
-    #     func=mdp.object_goal_distance,
-    #     params={"std": 0.05, "minimal_height": 0.04, "command_name": "object_pose"},
-    #     weight=5.0,
-    # )
+        object_goal_tracking_fine_grained = RewTerm(
+            func=mdp.object_goal_distance,
+            params={"std": 0.05, "minimal_height": 0.04, "command_name": "object_pose", "object_cfg": SceneEntityCfg("object1")},
+            weight=5.0,
+        )
 
     # action penalty
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=0)
@@ -188,9 +189,9 @@ class TerminationsCfg:
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
-    # object_dropping = DoneTerm(
-    #     func=mdp.root_height_below_minimum, params={"minimum_height": -0.05, "asset_cfg": SceneEntityCfg("object")}
-    # )
+    object_dropping = DoneTerm(
+        func=mdp.root_height_below_minimum, params={"minimum_height": -0.05, "asset_cfg": SceneEntityCfg("object1")}
+    )
 
 
 @configclass
@@ -198,11 +199,11 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 50000}
+        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 100000}
     )
 
     joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 50000}
+        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 100000}
     )
 
 
@@ -231,13 +232,13 @@ class LiftEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 5.0
+        self.episode_length_s = 7.5
         # simulation settings
         self.sim.dt = 0.01  # 100Hz
         self.sim.render_interval = self.decimation
 
         self.sim.physx.bounce_threshold_velocity = 0.2
         self.sim.physx.bounce_threshold_velocity = 0.01
-        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4
-        self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024
+        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4 * 4
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024 * 4
         self.sim.physx.friction_correlation_distance = 0.00625

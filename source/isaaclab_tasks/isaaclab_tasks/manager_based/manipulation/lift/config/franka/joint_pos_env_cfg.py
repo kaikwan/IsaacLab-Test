@@ -6,7 +6,7 @@
 from isaaclab.assets import RigidObjectCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
-from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
+from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg, MassPropertiesCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
@@ -41,7 +41,7 @@ class FrankaCubeLiftEnvCfg(LiftEnvCfg):
             close_command_expr={"panda_finger_.*": 0.0},
         )
         # Set the body name for the end effector
-        # self.commands.object_pose.body_name = "panda_hand"
+        self.commands.object_pose.body_name = "panda_hand"
 
         # Set Cube as object
         self.scene.object1 = RigidObjectCfg(
@@ -50,8 +50,14 @@ class FrankaCubeLiftEnvCfg(LiftEnvCfg):
             spawn=UsdFileCfg(
                 usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/red_block.usd",
                 scale=(0.8, 0.8, 0.8),
+                mass_props=MassPropertiesCfg(mass=2),
                 rigid_props=RigidBodyPropertiesCfg(
-                    kinematic_enabled=True,
+                    solver_position_iteration_count=16,
+                    solver_velocity_iteration_count=1,
+                    max_angular_velocity=1000.0,
+                    max_linear_velocity=1000.0,
+                    max_depenetration_velocity=5.0,
+                    disable_gravity=False,
                 ),
             ),
         )
