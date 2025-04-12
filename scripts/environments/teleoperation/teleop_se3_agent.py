@@ -21,6 +21,7 @@ parser.add_argument("--num_envs", type=int, default=1, help="Number of environme
 parser.add_argument("--teleop_device", type=str, default="keyboard", help="Device for interacting with environment")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--sensitivity", type=float, default=1.0, help="Sensitivity factor.")
+parser.add_argument("--num_demos", type=int, default=50,help="How many demonstrations to collect before exiting.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -38,6 +39,9 @@ simulation_app = app_launcher.app
 
 import gymnasium as gym
 import torch
+import matplotlib.pyplot as plt
+import numpy as np
+from data_collector import DataCollector
 
 import omni.log
 
@@ -112,37 +116,62 @@ def main():
             f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'spacemouse''handtracking'."
         )
 
-    # add teleoperation key for env reset
-    should_reset_recording_instance = False
 
-    def reset_recording_instance():
-        nonlocal should_reset_recording_instance
-        should_reset_recording_instance = True
+    # Data collection Logic
+    num_demos_target = args_cli.num_demos
+    current_demo_id = 1
+    collected_demos = 0
 
-    teleop_interface.add_callback("R", reset_recording_instance)
+    data_collector = DataCollector(demo_id=current_demo_id)
+    demo_in_progress = True
+
+    def finalize_demo():
+        nonlocal demo_in_progress, collected_demos, current_demo_id, data_collector
+        if demo_in_progress:
+            data_collector.finalize()
+            collected_demos += 1
+            print(f"[INFO] Finalized demo #{current_demo_id}. Demos so far = {collected_demos}")
+            env.reset()
+            current_demo_id += 1
+            data_collector = DataCollector(demo_id=current_demo_id)
+            demo_in_progress = True
+
+    def discard_demo():
+        nonlocal demo_in_progress, data_collector
+        if demo_in_progress:
+            print(f"[INFO] Discarding demo #{data_collector.demo_id}, starting over the same demo.")
+            data_collector.discard()
+            env.reset()
+
+    def reset_env():
+        print("[INFO] Resetting environment via teleop callback.")
+        env.reset()
+
+    teleop_interface.add_callback("R", reset_env)
+    teleop_interface.add_callback("F", finalize_demo)
+    teleop_interface.add_callback("M", discard_demo)
     print(teleop_interface)
 
     # reset environment
     env.reset()
     teleop_interface.reset()
-
-    # simulate environment
+    
     while simulation_app.is_running():
-        # run everything in inference mode
-        with torch.inference_mode():
-            # get keyboard command
-            delta_pose, gripper_command = teleop_interface.advance()
-            delta_pose = delta_pose.astype("float32")
-            # convert to torch
-            delta_pose = torch.tensor(delta_pose, device=env.device).repeat(env.num_envs, 1)
-            # pre-process actions
-            actions = pre_process_actions(delta_pose, gripper_command)
-            # apply actions
-            env.step(actions)
+        if collected_demos >= num_demos_target:
+            print(f"[INFO] Reached {num_demos_target} demos. Exiting.")
+            break
 
-            if should_reset_recording_instance:
-                env.reset()
-                should_reset_recording_instance = False
+        # Step the environment in inference mode
+        with torch.inference_mode():
+            delta_pose_np, gripper_command = teleop_interface.advance()
+            delta_pose = torch.tensor(delta_pose_np, device=env.device, dtype=torch.float32).repeat(env.num_envs, 1)
+            actions = pre_process_actions(delta_pose, gripper_command)
+            obs, rew, done, truncated, info = env.step(actions)
+
+            if demo_in_progress and "policy" in obs and "rgb" in obs["policy"]:
+                rgb = obs["policy"]["rgb"]
+                rgb_np = rgb.detach().cpu().numpy()
+                data_collector.record(rgb_np)
 
     # close the simulator
     env.close()

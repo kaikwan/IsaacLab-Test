@@ -20,6 +20,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.sensors.camera import Camera, CameraCfg
 
 import isaaclab_tasks.manager_based.manipulation.reach.mdp as mdp
 
@@ -47,7 +48,17 @@ class ReachSceneCfg(InteractiveSceneCfg):
     #     init_state=AssetBaseCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0), rot=(0.70711, 0.0, 0.0, 0.70711)),
     # )
 
-
+    camera = CameraCfg(
+        prim_path="{ENV_REGEX_NS}/camera",
+        update_period=0, 
+        height=480, 
+        width=640,
+        data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(
+            focal_length=25.0, focus_distance=400.0, horizontal_aperture=20.955,# clipping_range=(0.05, 2.0)
+        ),
+        offset=CameraCfg.OffsetCfg(pos=(-0.84, 0.994, 1.29855), rot=(0.41329, 0.29477, -0.4949, -0.70525), convention="opengl"),
+    )
 
 
     # robots
@@ -104,12 +115,13 @@ class ObservationsCfg:
         # observation terms (order preserved)
         joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
+        rgb = ObsTerm(func=mdp.get_camera_data, params={"type": "rgb"})
         # pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self):
-            self.enable_corruption = True
-            self.concatenate_terms = True
+            self.enable_corruption = False
+            self.concatenate_terms = False
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
