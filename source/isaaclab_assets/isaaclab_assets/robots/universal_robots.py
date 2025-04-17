@@ -56,7 +56,7 @@ UR10_CFG = ArticulationCfg(
 
 UR16_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/home/henri/Downloads/ur16e_epick_flattened.usd", # f"{ISAAC_NUCLEUS_DIR}/Robots/UniversalRobots/ur16e/ur16e.usd",
+        usd_path="/home/raymond/kaikwan_ws/IsaacLab-Test/ur16e_epick_flattened.usd", # f"{ISAAC_NUCLEUS_DIR}/Robots/UniversalRobots/ur16e/ur16e.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             max_depenetration_velocity=5.0,

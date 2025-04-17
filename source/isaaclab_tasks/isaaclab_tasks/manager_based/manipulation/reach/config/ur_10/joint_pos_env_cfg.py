@@ -50,7 +50,7 @@ class UR10ReachEnvCfg(ReachEnvCfg):
         }
 
 
-        self.scene.robot.init_state.pos = (-0.22, 0, 1.020)
+        self.scene.robot.init_state.pos = (0, 0, 1.020)
 
         # Convert Euler angles to quaternion using scipy
         r = R.from_euler('xyz', [0, 180, 0], degrees=True)
@@ -86,6 +86,20 @@ class UR10ReachEnvCfg(ReachEnvCfg):
             pose = cube[obj]['pose']
             setattr(self.scene, "pod_prim" + str(i+1), add_cube(dims, pose, i))
             i += 1
+
+        back_wall = RigidObjectCfg(
+                prim_path=f"{{ENV_REGEX_NS}}/Pod_14",
+                # w, x, y, z
+                init_state=RigidObjectCfg.InitialStateCfg(pos=[1.0914, 0.0, 0.5], rot=[0.70711, 0.0, 0.0, 0.70711]),
+                spawn=sim_utils.CuboidCfg(
+                    size=[1, 0.001, 2.5],
+                    rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+                    mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+                    collision_props=sim_utils.CollisionPropertiesCfg(),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 1.0, 0.0)),
+        ))
+
+        setattr(self.scene, "pod_prim" + str(14), back_wall)
 
 @configclass
 class UR10ReachEnvCfg_PLAY(UR10ReachEnvCfg):

@@ -40,13 +40,41 @@ class ReachSceneCfg(InteractiveSceneCfg):
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, -1.05)),
     )
 
-    # table = AssetBaseCfg(
-    #     prim_path="{ENV_REGEX_NS}/Table",
-    #     spawn=sim_utils.UsdFileCfg(
-    #         usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd",
-    #     ),
-    #     init_state=AssetBaseCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0), rot=(0.70711, 0.0, 0.0, 0.70711)),
-    # )
+    craker_box = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/crackerbox",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/YCB/Axis_Aligned_Physics/003_cracker_box.usd",
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.95, 0.15, 0.90), rot=(0.70711, 0.0, 0.0, 0.70711)),
+        # init_state=RigidObjectCfg.InitialStateCfg(pos=(0.65, 0.15, 0.90), rot=(0.0, 0.70711, 0.0, 0.70711)),
+    )
+
+    sugar_box = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/sugar",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/YCB/Axis_Aligned_Physics/004_sugar_box.usd",
+        ),
+        # init_state=RigidObjectCfg.InitialStateCfg(pos=(1.3, 0.15, 0.90), rot=(0.70711, 0.0, 0.0, 0.70711)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.95, -0.03, 0.80), rot=(0.70711, 0.70711, 0.0, 0.0)),
+    )
+
+    mustard = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/mustard",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/YCB/Axis_Aligned_Physics/006_mustard_bottle.usd",
+        ),
+        # init_state=RigidObjectCfg.InitialStateCfg(pos=(1.3, 0.15, 0.90), rot=(0.70711, 0.0, 0.0, 0.70711)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.9, 0.0, 0.80), rot=(-0.70711, 0.70711, 0.0, 0.0)),
+    )
+
+    tomato_soup = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/tomato",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/YCB/Axis_Aligned_Physics/005_tomato_soup_can.usd",
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.75, 0.05, 0.80), rot=(0.70711, 0.70711, 0.0, 0.0)),
+        # init_state=RigidObjectCfg.InitialStateCfg(pos=(0.65, 0.15, 0.80), rot=(0.0, 0.0, 0.0, 1.0)),
+    )
 
     camera = CameraCfg(
         prim_path="{ENV_REGEX_NS}/camera",
