@@ -107,9 +107,9 @@ class ObservationsCfg:
         joint_vel = ObsTerm(func=mdp.joint_vel_rel)
         object_idx = ObsTerm(func=mdp.object_idx)
         actions = ObsTerm(func=mdp.last_action)
-        # object_position = ObsTerm(
-        #     func=mdp.object_position_in_robot_root_frame, params={"object_cfg": SceneEntityCfg("object1")}
-        # )
+        object_position = ObsTerm(
+            func=mdp.object_position_in_robot_root_frame, params={"object_cfg": SceneEntityCfg("object1")}
+        )
         target_object_position = ObsTerm(func=mdp.generated_commands, params={"command_name": "object_pose"})
 
         def __post_init__(self):
@@ -174,13 +174,13 @@ class RewardsCfg:
         )
 
     # action penalty
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
+    # action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
 
-    joint_vel = RewTerm(
-        func=mdp.joint_vel_l2,
-        weight=-1e-4,
-        params={"asset_cfg": SceneEntityCfg("robot")},
-    )
+    # joint_vel = RewTerm(
+    #     func=mdp.joint_vel_l2,
+    #     weight=-1e-4,
+    #     params={"asset_cfg": SceneEntityCfg("robot")},
+    # )
 
 
 @configclass

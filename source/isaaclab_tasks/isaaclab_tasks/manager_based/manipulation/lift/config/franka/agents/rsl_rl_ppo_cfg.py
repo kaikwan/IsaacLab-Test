@@ -24,7 +24,7 @@ class LiftCubePPORunnerCfg(RslRlOnPolicyRunnerCfg):
         actor_hidden_dims=[256, 128, 64],
         critic_hidden_dims=[256, 128, 64],
         activation="elu",
-        rnn_num_layers=1
+        rnn_num_layers=6
     )
     algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,
@@ -40,5 +40,5 @@ class LiftCubePPORunnerCfg(RslRlOnPolicyRunnerCfg):
         desired_kl=0.01,
         max_grad_norm=1.0,
     )
-    # logger = "wandb"
-    # wandb_project = "franka_lift"
+    logger = "wandb"
+    wandb_project = "franka_lift"
