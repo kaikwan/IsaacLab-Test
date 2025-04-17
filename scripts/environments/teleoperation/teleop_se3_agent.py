@@ -167,6 +167,7 @@ def main():
             delta_pose = torch.tensor(delta_pose_np, device=env.device, dtype=torch.float32).repeat(env.num_envs, 1)
             actions = pre_process_actions(delta_pose, gripper_command)
             obs, rew, done, truncated, info = env.step(actions)
+            breakpoint()
 
             if demo_in_progress and "policy" in obs and "rgb" in obs["policy"]:
                 rgb = obs["policy"]["rgb"]

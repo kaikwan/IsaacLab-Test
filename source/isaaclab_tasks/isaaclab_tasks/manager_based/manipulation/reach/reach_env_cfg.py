@@ -21,6 +21,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab.sensors.camera import Camera, CameraCfg
+from pxr import Usd, Sdf
 
 import isaaclab_tasks.manager_based.manipulation.reach.mdp as mdp
 
@@ -146,6 +147,22 @@ class ObservationsCfg:
         rgb = ObsTerm(func=mdp.get_camera_data, params={"type": "rgb"})
         # pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
         actions = ObsTerm(func=mdp.last_action)
+        crackerbox = ObsTerm(
+                    func= mdp.object_pose_in_robot_root_frame,
+                    params={"object_cfg": SceneEntityCfg("craker_box")}
+                    )
+        sugar_box = ObsTerm(
+                    func= mdp.object_pose_in_robot_root_frame,
+                    params={"object_cfg": SceneEntityCfg("sugar_box")}
+                    )
+        mustard = ObsTerm(
+                    func= mdp.object_pose_in_robot_root_frame,
+                    params={"object_cfg": SceneEntityCfg("mustard")}
+                    )
+        tomato_soup = ObsTerm(
+                    func= mdp.object_pose_in_robot_root_frame,
+                    params={"object_cfg": SceneEntityCfg("tomato_soup")}
+                    )
 
         def __post_init__(self):
             self.enable_corruption = False
