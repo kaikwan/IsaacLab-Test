@@ -11,8 +11,8 @@ from isaaclab.utils import configclass
 @configclass
 class LiftCubePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     # resume = True
-    # load_run = "2025-03-30_12-56-24"
-    # load_checkpoint = "model_9850.pt"
+    # load_run = "2025-04-15_13-16-36"
+    # load_checkpoint = "model_5850.pt"
     num_steps_per_env = 24
     max_iterations = 30000
     save_interval = 50
@@ -24,7 +24,7 @@ class LiftCubePPORunnerCfg(RslRlOnPolicyRunnerCfg):
         actor_hidden_dims=[256, 128, 64],
         critic_hidden_dims=[256, 128, 64],
         activation="elu",
-        rnn_num_layers=2,
+        rnn_num_layers=1
     )
     algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,

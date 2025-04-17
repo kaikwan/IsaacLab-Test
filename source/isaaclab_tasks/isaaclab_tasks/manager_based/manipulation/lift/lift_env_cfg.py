@@ -155,7 +155,7 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     reaching_object = RewTerm(
-        func=mdp.object_ee_distance, params={"std": 0.1, "object_cfg": SceneEntityCfg("object1")}, weight=100.0
+        func=mdp.object_ee_distance, params={"std": 0.1, "object_cfg": SceneEntityCfg("object1")}, weight=1.0
     )
 
     if exploit:
@@ -174,11 +174,11 @@ class RewardsCfg:
         )
 
     # action penalty
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=0)
+    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
 
     joint_vel = RewTerm(
         func=mdp.joint_vel_l2,
-        weight=0,
+        weight=-1e-4,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 
@@ -198,13 +198,13 @@ class TerminationsCfg:
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
-    action_rate = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 100000}
-    )
+    # action_rate = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "action_rate", "weight": -1e-1, "num_steps": 100000}
+    # )
 
-    joint_vel = CurrTerm(
-        func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 100000}
-    )
+    # joint_vel = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "joint_vel", "weight": -1e-1, "num_steps": 100000}
+    # )
 
 
 ##
@@ -239,6 +239,9 @@ class LiftEnvCfg(ManagerBasedRLEnvCfg):
 
         self.sim.physx.bounce_threshold_velocity = 0.2
         self.sim.physx.bounce_threshold_velocity = 0.01
-        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4 * 4
-        self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024 * 4
+        self.sim.physx.gpu_max_rigid_contact_count = 2**23
+        self.sim.physx.gpu_max_rigid_patch_count = 5 * 2**15
+        self.sim.physx.gpu_found_lost_pairs_capacity = 2**21
+        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 2**25
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = 2**21
         self.sim.physx.friction_correlation_distance = 0.00625
