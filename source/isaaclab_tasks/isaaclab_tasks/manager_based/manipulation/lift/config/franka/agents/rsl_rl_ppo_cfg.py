@@ -10,8 +10,11 @@ from isaaclab.utils import configclass
 
 @configclass
 class LiftCubePPORunnerCfg(RslRlOnPolicyRunnerCfg):
+    # resume = True
+    # load_run = "2025-04-17_20-37-26"
+    # load_checkpoint = "model_550.pt"
     num_steps_per_env = 24
-    max_iterations = 1500
+    max_iterations = 30000
     save_interval = 50
     experiment_name = "franka_lift"
     empirical_normalization = False
@@ -28,10 +31,12 @@ class LiftCubePPORunnerCfg(RslRlOnPolicyRunnerCfg):
         entropy_coef=0.006,
         num_learning_epochs=5,
         num_mini_batches=4,
-        learning_rate=1.0e-4,
+        learning_rate=1.0e-5,
         schedule="adaptive",
         gamma=0.98,
         lam=0.95,
         desired_kl=0.01,
         max_grad_norm=1.0,
     )
+    logger = "wandb"
+    wandb_project = "franka_lift"
