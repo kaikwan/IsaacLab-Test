@@ -41,6 +41,7 @@ import gymnasium as gym
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 from data_collector import DataCollector
 
 import omni.log
@@ -121,8 +122,6 @@ def main():
     num_demos_target = args_cli.num_demos
     current_demo_id = 1
     collected_demos = 0
-
-    data_collector = DataCollector(demo_id=current_demo_id)
     demo_in_progress = True
 
     def finalize_demo():
@@ -130,16 +129,17 @@ def main():
         if demo_in_progress:
             data_collector.finalize()
             collected_demos += 1
-            print(f"[INFO] Finalized demo #{current_demo_id}. Demos so far = {collected_demos}")
             env.reset()
             current_demo_id += 1
-            data_collector = DataCollector(demo_id=current_demo_id)
-            demo_in_progress = True
+            data_collector = DataCollector(
+                demo_id=current_demo_id,
+                env_cfg=env_cfg,
+            )
+
 
     def discard_demo():
         nonlocal demo_in_progress, data_collector
         if demo_in_progress:
-            print(f"[INFO] Discarding demo #{data_collector.demo_id}, starting over the same demo.")
             data_collector.discard()
             env.reset()
 
@@ -155,6 +155,9 @@ def main():
     # reset environment
     env.reset()
     teleop_interface.reset()
+    data_collector = DataCollector( 
+    demo_id=current_demo_id,
+    env_cfg=env_cfg)
     
     while simulation_app.is_running():
         if collected_demos >= num_demos_target:
@@ -167,12 +170,12 @@ def main():
             delta_pose = torch.tensor(delta_pose_np, device=env.device, dtype=torch.float32).repeat(env.num_envs, 1)
             actions = pre_process_actions(delta_pose, gripper_command)
             obs, rew, done, truncated, info = env.step(actions)
-            breakpoint()
+            # breakpoint()
 
             if demo_in_progress and "policy" in obs and "rgb" in obs["policy"]:
                 rgb = obs["policy"]["rgb"]
                 rgb_np = rgb.detach().cpu().numpy()
-                data_collector.record(rgb_np)
+                data_collector.record(frame=rgb_np, action=actions[0].cpu().numpy())
 
     # close the simulator
     env.close()

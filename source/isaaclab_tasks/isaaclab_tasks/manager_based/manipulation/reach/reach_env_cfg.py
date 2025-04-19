@@ -22,6 +22,7 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab.sensors.camera import Camera, CameraCfg
 from pxr import Usd, Sdf
+from isaaclab.envs.mdp import events as mdp_events 
 
 import isaaclab_tasks.manager_based.manipulation.reach.mdp as mdp
 
@@ -73,7 +74,7 @@ class ReachSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.UsdFileCfg(
             usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/YCB/Axis_Aligned_Physics/005_tomato_soup_can.usd",
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.75, 0.05, 0.80), rot=(0.70711, 0.70711, 0.0, 0.0)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.65, 0.05, 0.80), rot=(0.70711, 0.70711, 0.0, 0.0)),
         # init_state=RigidObjectCfg.InitialStateCfg(pos=(0.65, 0.15, 0.80), rot=(0.0, 0.0, 0.0, 1.0)),
     )
 
@@ -184,6 +185,76 @@ class EventCfg:
             "velocity_range": (0.0, 0.0),
         },
     )
+    randomize_tomato = EventTerm(
+            func=mdp.reset_root_state_uniform,
+            mode="reset",
+            params={
+                "pose_range": {"x": (-0., 0.), "y": (-0.05, 0.1), "z": (0., 0.)},
+                "velocity_range": {},
+                "asset_cfg": SceneEntityCfg("tomato_soup"),
+            },
+    )
+    randomize_cracker = EventTerm(
+            func=mdp.reset_root_state_uniform,
+            mode="reset",
+            params={
+                "pose_range": {"x": (-0.1, 0.1), "y": (0.0, 0.05), "z": (0., 0.)},
+                "velocity_range": {},
+                "asset_cfg": SceneEntityCfg("craker_box"),
+            },
+    )
+    randomize_mustard = EventTerm(
+            func=mdp.reset_root_state_uniform,
+            mode="reset",
+            params={
+                "pose_range": {"x": (-0.1, 0.1), "y": (0.0, 0.1), "z": (0., 0.)},
+                "velocity_range": {},
+                "asset_cfg": SceneEntityCfg("mustard"),
+        },
+    )
+    randomize_sugar = EventTerm(
+            func=mdp.reset_root_state_uniform,
+            mode="reset",
+            params={
+                "pose_range": {"x": (-0.1, 0.1), "y": (0.0, 0.1), "z": (0., 0.0)},
+                "velocity_range": {},
+                "asset_cfg": SceneEntityCfg("sugar_box"),
+        },
+    )
+    reset_camera = EventTerm(
+            func=mdp.reset_cam,
+            mode="reset",
+            params={
+                "pose_range": {"x": (-0.2, 0.2), "y": (-0.5, -0.2), "z": (-0.2, 0.2)},
+                "velocity_range": {},
+                "asset_cfg": SceneEntityCfg("camera"),
+            },
+    )
+    # randomize_cracker_color = EventTerm(
+    #     func=mdp_events.randomize_visual_color,
+    #     mode="reset",                       # run once per env reset
+    #     params={
+    #         # “.*” → all bodies/meshes under that asset
+    #         "asset_cfg": SceneEntityCfg("craker_box", body_names=".*"),
+    #         # sample uniformly from these four pastel-ish reds
+    #         "colors": [(0.70, 0.20, 0.20),
+    #                 (0.86, 0.30, 0.30),
+    #                 (0.78, 0.25, 0.25),
+    #                 (0.90, 0.38, 0.38)],
+    #         "distribution": "uniform",
+    #     },
+    # )
+    # randomize_key_light = EventTerm(
+    #     func   = mdp.randomize_global_light,
+    #     mode   = "reset",
+    #     params = {
+    #         "asset_cfg":       SceneEntityCfg("light"),
+    #         "intensity_range": (200, 700),
+    #         "hue_range":       (0.0, 1.0),
+    #         "pitch_range":     (-15.0, 15.0),
+    #         "yaw_range":       (-30.0, 30.0),
+    #     },
+    # )
 
 
 @configclass

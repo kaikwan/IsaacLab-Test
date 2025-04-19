@@ -26,7 +26,8 @@ optional arguments:
 
 import argparse
 import os
-
+import cv2
+import numpy as np
 from isaaclab.app import AppLauncher
 
 # add argparse arguments
@@ -103,6 +104,21 @@ class RateLimiter:
             while self.last_time < time.time():
                 self.last_time += self.sleep_duration
 
+def save_video(frames, fname, fps):
+    """Write list[np.ndarray HxWx3 RGB float[0‑1] or uint8] to MP4."""
+    if not frames:
+        print("[WARN] no frames ‑ video skipped"); return
+    h, w = frames[0].shape[:2]
+    vw = cv2.VideoWriter(fname,
+                         cv2.VideoWriter_fourcc(*"mp4v"),
+                         fps, (w, h))
+    for fr in frames:
+        if fr.dtype != np.uint8:
+            fr = (fr * 255).astype(np.uint8)
+        vw.write(cv2.cvtColor(fr, cv2.COLOR_RGB2BGR))
+    vw.release()
+    print(f"[INFO] video saved → {fname}")
+
 
 def pre_process_actions(delta_pose: torch.Tensor, gripper_command: bool) -> torch.Tensor:
     """Pre-process actions for the environment."""
@@ -166,10 +182,33 @@ def main():
 
     # add teleoperation key for reset current recording instance
     should_reset_recording_instance = False
+    success_step_count = 0
+    frames_this_demo = []
+    demo_index = 1
 
     def reset_recording_instance():
         nonlocal should_reset_recording_instance
         should_reset_recording_instance = True
+
+    def finish_demo():
+        nonlocal demo_index, success_step_count
+        # 1) write video
+        video_name = os.path.join(output_dir, f"demo_{demo_index:04d}.mp4")
+        save_video(frames_this_demo, video_name, 30)
+        frames_this_demo.clear()
+
+        # 2) export HDF5 episode
+        env.recorder_manager.record_pre_reset([0], force_export_or_skip=False)
+        env.recorder_manager.set_success_to_episodes(
+            [0], torch.tensor([[True]], dtype=torch.bool, device=env.device)
+        )
+        env.recorder_manager.export_episodes([0])
+
+        # 3) housekeeping
+        demo_index += 1
+        success_step_count = 0
+        env.recorder_manager.reset()
+        env.reset()
 
     # create controller
     if args_cli.teleop_device.lower() == "keyboard":
@@ -189,6 +228,8 @@ def main():
         )
 
     teleop_interface.add_callback("R", reset_recording_instance)
+    teleop_interface.add_callback("F", finish_demo)
+
     print(teleop_interface)
 
     # reset before starting
@@ -197,7 +238,7 @@ def main():
 
     # simulate environment -- run everything in inference mode
     current_recorded_demo_count = 0
-    success_step_count = 0
+
     with contextlib.suppress(KeyboardInterrupt) and torch.inference_mode():
         while True:
             # get keyboard command
@@ -208,7 +249,11 @@ def main():
             actions = pre_process_actions(delta_pose, gripper_command)
 
             # perform action on environment
-            env.step(actions)
+            obs, rew, done, truncated, info = env.step(actions)
+
+            if "policy" in obs and "rgb" in obs["policy"]:
+                # breakpoint()
+                frames_this_demo.append(obs["policy"]["rgb"].cpu().numpy())
 
             if success_term is not None:
                 if bool(success_term.func(env, **success_term.params)[0]):

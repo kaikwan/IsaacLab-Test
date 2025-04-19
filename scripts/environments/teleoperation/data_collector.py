@@ -1,42 +1,61 @@
-import cv2
-import numpy as np
+# SPDX‑License‑Identifier: BSD‑3‑Clause
+"""
+Utility that writes:
+    demo_N.mp4
+    demo_N_actions.npy
+    demo_N_env_cfg.yaml
+    demo_N_meta.json
+"""
+
+import os, json, cv2, numpy as np, datetime as dt
+from dataclasses import asdict
+from isaaclab.utils.io import dump_yaml
 
 class DataCollector:
-    """
-    A simple data collector that records frames.
-    At the end of a demonstration, it writes out a video (using OpenCV).
-    """
-    def __init__(self, demo_id, fps=30):
-        self.demo_id = demo_id
-        self.frames = []
-        self.fps = fps
-        self.video_filename = f"videos/demo_{demo_id}.mp4"
-        print(f"[INFO] DataCollector initialized for demo #{demo_id}")
+    def __init__(self, demo_id: int, env_cfg, fps: int = 30, folder: str = "videos"):
+        os.makedirs(folder, exist_ok=True)
+        stem = f"{folder}/demo_{demo_id:04d}"
+        self.f_video  = stem + ".mp4"
+        self.f_action = stem + "_actions.npy"
+        self.f_cfg    = stem + "_env_cfg.yaml"
+        self.f_meta   = stem + "_meta.json"
 
-    def record(self, frame):
-        """Record a frame (RGB image)."""
-        self.frames.append(frame)
+        dump_yaml(self.f_cfg, asdict(env_cfg))
+        self.fps     = fps
+        self.frames, self.actions = [], []
+        print(f"[INFO] DataCollector #{demo_id} ready")
+
+    # ---------------- logging ---------------- #
+    def record(self, frame: np.ndarray, action: np.ndarray):
+        self.frames.append(frame.copy())
+        self.actions.append(action.copy())
 
     def discard(self):
-        """Discard everything collected so far."""
-        self.frames = []
+        self.frames.clear(); self.actions.clear()
 
+    # ---------------- flush to disk ---------------- #
     def finalize(self):
-        """Finalize the current demonstration by saving video."""
-        if len(self.frames) == 0:
-            print("[WARNING] No frames recorded for this demo, skipping video creation.")
+        if not self.frames:
+            print("[WARN] nothing recorded; skipping.")
             return
 
-        # Save the video
-        height, width, _ = self.frames[0].shape
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        video_out = cv2.VideoWriter(self.video_filename, fourcc, self.fps, (width, height))
+        # --- video ---
+        h, w = self.frames[0].shape[:2]
+        vw = cv2.VideoWriter(self.f_video, cv2.VideoWriter_fourcc(*"mp4v"),
+                             self.fps, (w, h))
+        for frm in self.frames:
+            if frm.dtype != np.uint8:
+                frm = (frm*255).astype(np.uint8)
+            vw.write(cv2.cvtColor(frm, cv2.COLOR_RGB2BGR))
+        vw.release()
 
-        for frame in self.frames:
-            # Ensure the frame is in uint8 format
-            if frame.dtype != np.uint8:
-                frame = (frame * 255).astype(np.uint8)
-            frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            video_out.write(frame_bgr)
-        video_out.release()
-        print(f"[INFO] Video saved to {self.video_filename}")
+        # --- actions ---
+        np.save(self.f_action, np.stack(self.actions))
+
+        # --- meta ---
+        meta = dict(date=dt.datetime.utcnow().isoformat(timespec="seconds")+"Z",
+                    fps=self.fps, n_steps=len(self.actions))
+        with open(self.f_meta, "w") as f:
+            json.dump(meta, f, indent=2)
+
+        print(f"[✓] saved -> {self.f_video}")
