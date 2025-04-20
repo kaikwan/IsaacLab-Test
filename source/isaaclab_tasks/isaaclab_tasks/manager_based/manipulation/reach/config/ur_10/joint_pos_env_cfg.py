@@ -40,13 +40,21 @@ class UR10ReachEnvCfg(ReachEnvCfg):
         # self.scene.robot = UR16_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         # import pdb; pdb.set_trace()
+        # self.scene.robot.init_state.joint_pos = {
+        #     "shoulder_pan_joint": -0.61,
+        #     "shoulder_lift_joint": -1.53589,
+        #     "elbow_joint": 1.8326,
+        #     "wrist_1_joint": -0.296706,
+        #     "wrist_2_joint": 1.0,
+        #     "wrist_3_joint": -1.5708,
+        # }
         self.scene.robot.init_state.joint_pos = {
-            "shoulder_pan_joint": -0.61,
-            "shoulder_lift_joint": -1.53589,
-            "elbow_joint": 1.8326,
-            "wrist_1_joint": -0.296706,
-            "wrist_2_joint": 1.0,
-            "wrist_3_joint": -1.5708,
+            "shoulder_pan_joint": -1.0252,
+            "shoulder_lift_joint": -1.5089,
+            "elbow_joint": 2.5458,
+            "wrist_1_joint": -1.1429,
+            "wrist_2_joint": 0.5115,
+            "wrist_3_joint": -1.7506,
         }
 
 

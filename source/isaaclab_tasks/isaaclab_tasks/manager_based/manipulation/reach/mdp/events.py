@@ -4,7 +4,7 @@ import omni.replicator.core as rep
 from isaaclab.envs import ManagerBasedEnv
 from isaaclab.managers import SceneEntityCfg
 import isaaclab.utils.math as math_utils
-from omni.isaac.core.utils.extensions import enable_extension
+# from omni.isaac.core.utils.extensions import enable_extension
 import colorsys
 
 def reset_cam(
